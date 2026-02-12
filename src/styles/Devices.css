@@ -1,0 +1,328 @@
+:root {
+  --primary-color: #00d4ff;
+  --secondary-color: #0066ff;
+  --dark-bg: #0a0a12;
+  --card-bg: rgba(22, 22, 34, 0.85);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(0, 212, 255, 0.2);
+}
+
+/* Water Droplet Animation */
+.water-droplet {
+  position: absolute;
+  background: rgba(0, 212, 255, 0.2);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: fall linear infinite;
+  z-index: 1;
+}
+
+@keyframes fall {
+  0% { transform: translateY(-10vh) scale(0.5); opacity: 0; }
+  10% { opacity: 0.3; }
+  90% { opacity: 0.3; }
+  100% { transform: translateY(110vh) scale(1); opacity: 0; }
+}
+
+/* Main Container */
+.devices-container {
+  position: relative;
+  background-color: var(--dark-bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 1.5rem;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+.devices-content {
+  position: relative;
+  z-index: 10;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.devices-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Search Input */
+.search-container {
+  position: relative;
+  max-width: 450px;
+  margin: 0 auto 1.5rem;
+}
+
+.devices-search-input {
+  width: 100%;
+  padding: 0.6rem 1.25rem 0.6rem 2.5rem;
+  border-radius: 25px;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.devices-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Loading Animation */
+.loading-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.flow-spinner {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.8rem;
+}
+
+.flow-spinner-dot {
+  width: 10px;
+  height: 10px;
+  margin: 0 3px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  animation: flowPulse 1.5s infinite ease-in-out;
+}
+
+.flow-spinner-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.flow-spinner-dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.flow-spinner-dot:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes flowPulse {
+  0%, 100% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Table Styles */
+.devices-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  background-color: var(--card-bg);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.devices-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.devices-table-header {
+  padding: 0.8rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.device-row {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.device-row:last-child {
+  border-bottom: none;
+}
+
+.device-row:hover {
+  background-color: rgba(0, 212, 255, 0.05);
+}
+
+.devices-table-cell {
+  padding: 0.8rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.devices-device-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.devices-device-link:hover {
+  color: white;
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.5);
+}
+
+.device-id-badge {
+  display: inline-block;
+  padding: 0.2rem 0.4rem;
+  background-color: rgba(0, 212, 255, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.8rem;
+}
+
+/* Flow Value Styles */
+.flow-value-container,
+.temp-value-container {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+}
+
+.flow-value {
+  font-weight: 500;
+}
+
+.flow-unit {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.temp-value {
+  font-weight: 500;
+}
+
+.temp-unit {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* No Results */
+.no-devices-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  color: var(--text-secondary);
+}
+
+.no-devices-found svg {
+  margin-bottom: 0.8rem;
+  stroke: var(--text-secondary);
+}
+
+/* Pagination */
+.devices-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+
+.devices-btn-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.85rem;
+  backdrop-filter: blur(8px);
+}
+
+.devices-btn-pagination:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.devices-btn-pagination:not(:disabled):hover {
+  background-color: rgba(0, 212, 255, 0.1);
+  border-color: var(--primary-color);
+}
+
+.devices-page-info {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .devices-container {
+    padding: 1rem;
+  }
+
+  .devices-title {
+    font-size: 1.7rem;
+  }
+
+  .devices-table-header {
+    font-size: 0.7rem;
+    padding: 0.6rem;
+  }
+
+  .devices-table-cell {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .devices-pagination {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .devices-container {
+    padding: 0.8rem;
+  }
+
+  .devices-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .search-container {
+    max-width: 100%;
+  }
+
+  .devices-search-input {
+    padding: 0.5rem 1rem 0.5rem 2.2rem;
+  }
+
+  .search-icon {
+    left: 0.7rem;
+  }
+}
