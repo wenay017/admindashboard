@@ -1,0 +1,335 @@
+/* graphd.css */
+
+.graphs-container {
+  background-color: #121212;
+  min-height: 100vh;
+  padding: 1rem; /* Reduced padding */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #e0e6e9;
+  font-size: 0.9rem; /* Added base font size */
+}
+
+.btn_links {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem; /* Reduced margin */
+  gap: 0.75rem; /* Reduced gap */
+  flex-wrap: wrap;
+}
+
+.back-link {
+  color: #22d3ee;
+  font-weight: 600;
+  font-size: 0.9rem; /* Smaller font */
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: #0ea5e9;
+}
+
+.download-all-btn {
+  background-color: #22d3ee;
+  border: none;
+  color: #121212;
+  padding: 0.5rem 1rem; /* Reduced padding */
+  font-weight: 700;
+  font-size: 0.85rem; /* Smaller font */
+  border-radius: 6px; /* Smaller radius */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.download-all-btn:hover {
+  background-color: #0ea5e9;
+}
+
+.date-filter {
+  background-color: #1f2937;
+  padding: 0.75rem 1rem; /* Reduced padding */
+  border-radius: 10px; /* Smaller radius */
+  margin-bottom: 1.5rem; /* Reduced margin */
+  display: flex;
+  align-items: center;
+  gap: 0.6rem; /* Reduced gap */
+  flex-wrap: wrap;
+}
+
+.date-filter label {
+  font-weight: 600;
+  color: #cbd5e1;
+  font-size: 0.85rem; /* Smaller font */
+}
+
+.date-filter input[type="date"] {
+  background-color: #121f2e;
+  border: 1.5px solid #256d85;
+  border-radius: 6px; /* Smaller radius */
+  padding: 0.35rem 0.6rem; /* Reduced padding */
+  color: #e0e6e9;
+  font-size: 0.85rem; /* Smaller font */
+  transition: border-color 0.3s ease;
+}
+
+.date-filter input[type="date"]:focus {
+  outline: none;
+  border-color: #22d3ee;
+  box-shadow: 0 0 6px #22d3ee; /* Reduced shadow */
+}
+
+.date-filter button {
+  background-color: #ef4444;
+  border: none;
+  color: white;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem; /* Reduced padding */
+  border-radius: 6px; /* Smaller radius */
+  cursor: pointer;
+  font-size: 0.9rem; /* Smaller font */
+  line-height: 1;
+  transition: background-color 0.3s ease;
+}
+
+.date-filter button:hover {
+  background-color: #dc2626;
+}
+
+.graphs-title {
+  margin-bottom: 1rem; /* Reduced margin */
+  color: #22d3ee;
+  font-weight: 700;
+  font-size: 1.2rem; /* Smaller font */
+  letter-spacing: 0.5px; /* Reduced spacing */
+  text-align: center;
+}
+
+.graphs-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Changed to single column */
+  gap: 1.2rem; /* Reduced gap */
+}
+
+.graph-card {
+  background-color: #1f2937;
+  border-radius: 10px; /* Smaller radius */
+  padding: 0.75rem 1rem; /* Reduced padding */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7); /* Reduced shadow */
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 300px; /* Reduced height */
+  transition: all 0.3s ease;
+}
+
+.graph-card:hover {
+  box-shadow: 0 8px 20px rgba(34, 211, 238, 0.5); /* Reduced shadow */
+}
+
+.graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem; /* Reduced margin */
+}
+
+.graph-header h3 {
+  color: #a5f3fc;
+  font-weight: 700;
+  font-size: 1rem; /* Smaller font */
+  margin: 0;
+  user-select: none;
+}
+
+.graph-header button {
+  background-color: #22d3ee;
+  border: none;
+  color: #121212;
+  padding: 0.3rem 0.6rem; /* Reduced padding */
+  font-weight: 600;
+  font-size: 0.8rem; /* Smaller font */
+  border-radius: 6px; /* Smaller radius */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  user-select: none;
+}
+
+.graph-header button:hover {
+  background-color: #0ea5e9;
+}
+
+.graphs-grid > .graph-card > div:last-child {
+  flex-grow: 1;
+  cursor: pointer;
+}
+
+.loading,
+.no-data {
+  text-align: center;
+  font-size: 1.2rem; /* Smaller font */
+  color: #ef4444;
+  margin-top: 3rem; /* Reduced margin */
+}
+
+.graph-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(18, 18, 18, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.graph-modal-content {
+  background-color: #1f2937;
+  padding: 1.5rem; /* Reduced padding */
+  border-radius: 10px; /* Smaller radius */
+  width: 90%;
+  height: 90%;
+  max-width: 1200px;
+  max-height: 800px;
+  cursor: default;
+  box-shadow: 0 0 15px #22d3ee; /* Reduced shadow */
+  overflow: auto;
+  position: relative;
+}
+
+.close-modal {
+  position: absolute;
+  top: 12px; /* Adjusted position */
+  right: 12px; /* Adjusted position */
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 26px; /* Smaller button */
+  height: 26px; /* Smaller button */
+  font-size: 14px; /* Smaller font */
+  cursor: pointer;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expanded-graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem; /* Reduced margin */
+  padding-right: 30px; /* Reduced padding */
+}
+
+.expanded-graph-header h3 {
+  color: #a5f3fc;
+  font-weight: 700;
+  font-size: 1.1rem; /* Smaller font */
+  margin: 0;
+}
+
+.expanded-graph-header button {
+  background-color: #22d3ee;
+  border: none;
+  color: #121212;
+  padding: 0.4rem 0.8rem; /* Reduced padding */
+  font-weight: 600;
+  font-size: 0.9rem; /* Smaller font */
+  border-radius: 6px; /* Smaller radius */
+  cursor: pointer;
+}
+
+/* Recharts specific styling */
+.recharts-cartesian-axis-tick {
+  font-size: 10px; /* Smaller font */
+}
+
+.recharts-x-axis .recharts-cartesian-axis-tick {
+  transform: translateY(3px); /* Smaller transform */
+}
+
+.recharts-tooltip {
+  background-color: #1f2937 !important;
+  border: 1px solid #22d3ee !important;
+  border-radius: 4px;
+  padding: 6px; /* Reduced padding */
+  font-size: 0.8rem; /* Smaller font */
+}
+
+.recharts-tooltip-label {
+  color: #a5f3fc;
+  font-weight: bold;
+  margin-bottom: 3px; /* Reduced margin */
+  font-size: 0.85rem; /* Smaller font */
+}
+
+.recharts-tooltip-item {
+  color: #e0e6e9;
+  font-size: 0.8rem; /* Smaller font */
+}
+
+.recharts-legend-item-text {
+  color: #e0e6e9 !important;
+  font-size: 0.8rem; /* Smaller font */
+}
+
+.recharts-legend-wrapper {
+  padding-top: 15px !important; /* Reduced padding */
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .graphs-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem; /* Reduced gap */
+  }
+  
+  .graph-modal-content {
+    width: 95%;
+    height: 95%;
+    padding: 1rem; /* Reduced padding */
+  }
+}
+
+@media (max-width: 480px) {
+  .graphs-container {
+    padding: 0.75rem; /* Reduced padding */
+  }
+
+  .date-filter {
+    flex-direction: column;
+    gap: 0.4rem; /* Reduced gap */
+    padding: 0.75rem; /* Reduced padding */
+  }
+
+  .btn_links {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem; /* Reduced gap */
+  }
+
+  .download-all-btn {
+    width: 100%;
+  }
+
+  .back-link {
+    font-size: 0.85rem; /* Smaller font */
+    text-align: center;
+  }
+
+  .expanded-graph-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px; /* Reduced gap */
+    padding-right: 0;
+  }
+  
+  .graph-card {
+    height: 280px; /* Slightly smaller */
+  }
+}
