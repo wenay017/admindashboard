@@ -1057,3 +1057,191 @@
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
+
+/* Editable Cell Styles */
+.editable-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.editable-cell:hover {
+  background-color: rgba(0, 212, 255, 0.05);
+}
+
+.edit-icon-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+}
+
+.edit-icon-btn:hover {
+  background-color: rgba(0, 212, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.save-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #10b981;
+}
+
+.save-edit-btn:hover {
+  background-color: rgba(16, 185, 129, 0.2);
+  transform: scale(1.15);
+}
+
+.cancel-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f43f5e;
+}
+
+.cancel-edit-btn:hover {
+  background-color: rgba(244, 63, 94, 0.2);
+  transform: scale(1.15);
+}
+
+/* Edit row highlighting */
+.device-row:has(.save-edit-btn) {
+  background-color: rgba(0, 212, 255, 0.08);
+}
+
+/* Edit Cell Container */
+.edit-cell-container {
+  display: contents;
+}
+
+/* Edit Input Fields */
+.edit-input-field {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--primary-color);
+  border-radius: 6px;
+  background-color: rgba(31, 41, 55, 0.9);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.edit-input-field:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+  background-color: rgba(31, 41, 55, 1);
+}
+
+.edit-input-field::placeholder {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+/* Edit Select Fields */
+.edit-input-field[type="select"],
+.edit-input-field:is(select) {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="rgb(0, 212, 255)" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.2em;
+  padding-right: 2.5rem;
+}
+
+.edit-input-field[type="select"] option,
+.edit-input-field:is(select) option {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+/* Action Buttons in Edit Mode */
+.devices-table-cell.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 0.8rem;
+}
+
+.save-edit-btn,
+.cancel-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+}
+
+.save-edit-btn {
+  color: #10b981;
+}
+
+.save-edit-btn:hover {
+  background-color: rgba(16, 185, 129, 0.15);
+  transform: scale(1.15);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.cancel-edit-btn {
+  color: #f43f5e;
+}
+
+.cancel-edit-btn:hover {
+  background-color: rgba(244, 63, 94, 0.15);
+  transform: scale(1.15);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
+}
+
+/* Edit row highlight */
+.device-row:has(.save-edit-btn) {
+  background-color: rgba(0, 212, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.3);
+}
+
+/* Make edit cells align properly */
+.devices-table-cell {
+  padding: 0.8rem;
+}
+
+.devices-table-cell.edit-actions {
+  padding: 0.8rem 0.5rem;
+}

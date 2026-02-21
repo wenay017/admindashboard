@@ -47,13 +47,11 @@ const AddDeviceForm = ({ onDeviceAdded }) => {
     setIsAdding(true);
 
     try {
-      await API.post("/sensor-data/devices", {
-        device_id: formData.device_id,
-        device_name: formData.device_name,
-      });
-
+      // Remove the POST to /sensor-data/devices - it doesn't exist
+      // Just create the initial sensor data record
       await API.post("/sensor-data", {
         device_id: formData.device_id,
+        device_name: formData.device_name,  // Add this if your sensor-data endpoint accepts it
         data1: 0,
         data2: 0,
         data3: 0,
@@ -63,6 +61,9 @@ const AddDeviceForm = ({ onDeviceAdded }) => {
         interval: 5,
       });
 
+      toast.success("Device added successfully ✅");
+      onDeviceAdded();
+      
       setFormData({
         device_id: "",
         device_name: "",
@@ -72,8 +73,6 @@ const AddDeviceForm = ({ onDeviceAdded }) => {
         longitude: "",
       });
       setShowForm(false);
-      toast.success("Device added successfully ✅");
-      onDeviceAdded();
     } catch (err) {
       console.error("Error adding device:", err);
       setError(
