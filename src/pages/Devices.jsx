@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import "../styles/Devices.css";
 import { motion } from "framer-motion";
 import AddDeviceForm from "../components/addnewdevice";
-import { FaEye } from "react-icons/fa";
+import { FaEye, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const Devices = () => {
   const [devices, setDevices] = useState([]);
@@ -123,7 +123,7 @@ const Devices = () => {
         <h2 className="devices-title">Flow Meter Devices</h2>
 
         {/* 🔍 SEARCH BAR */}
-        <div style={{ marginBottom: "20px", textAlign: "right" }}>
+        <div className="devices-search-wrapper">
           <input
             type="text"
             placeholder="Search by ID, Name, Location..."
@@ -132,12 +132,7 @@ const Devices = () => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            style={{
-              padding: "8px 12px",
-              width: "250px",
-              borderRadius: "6px",
-              border: "1px solid #ccc"
-            }}
+            className="devices-search-input"
           />
         </div>
 
@@ -236,25 +231,38 @@ const Devices = () => {
               </div>
             )}
 
-            {/* PAGINATION ARROWS */}
-            <div className="devices-pagination">
-              <button
-                className="devices-btn-pagination"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                ← Previous
-              </button>
-              <span className="devices-page-info">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                className="devices-btn-pagination"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Next →
-              </button>
+            {/* PAGINATION SECTION */}
+            {totalPages > 1 && (
+              <div className="devices-pagination">
+                <button
+                  className="devices-btn-pagination devices-btn-prev"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  title="Previous Page"
+                >
+                  <FaChevronLeft /> Previous
+                </button>
+
+                <div className="devices-page-info">
+                  <span className="current-page">{currentPage}</span>
+                  <span className="page-separator">of</span>
+                  <span className="total-pages">{totalPages}</span>
+                </div>
+
+                <button
+                  className="devices-btn-pagination devices-btn-next"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  title="Next Page"
+                >
+                  Next <FaChevronRight />
+                </button>
+              </div>
+            )}
+
+            {/* RESULTS INFO */}
+            <div className="devices-results-info">
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredDevices.length)} of {filteredDevices.length} devices
             </div>
           </>
         )}
@@ -262,6 +270,5 @@ const Devices = () => {
     </div>
   );
 };
-
 
 export default Devices;
