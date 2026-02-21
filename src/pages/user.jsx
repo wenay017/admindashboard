@@ -637,6 +637,7 @@ const UserManagement = () => {
           latitude: addNewDeviceData.latitude,
           longitude: addNewDeviceData.longitude,
         });
+     
 
         // Add to local state immediately
         setAllDevices((prev) => [
@@ -665,7 +666,21 @@ const UserManagement = () => {
         },
         true,
       );
-
+      if (!assignmentSuccess) {
+  setError("Failed to assign the new device.");
+  return;
+}
+await API.post("/sensor-data", {
+  device_id: addNewDeviceData.device_id,
+  data1: 0,
+  data2: 0,
+  data3: 0,
+  data4: 0,
+  data5: 0,
+  data6: 0,
+  interval: 5,
+});
+      
       if (assignmentSuccess) {
         // Add to editing devices
         setEditingDevices((prev) => {
