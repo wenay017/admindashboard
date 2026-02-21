@@ -235,11 +235,33 @@ const Devices = () => {
                 </div>
               </div>
             )}
+
+            {/* PAGINATION ARROWS */}
+            <div className="devices-pagination">
+              <button
+                className="devices-btn-pagination"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                ← Previous
+              </button>
+              <span className="devices-page-info">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                className="devices-btn-pagination"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next →
+              </button>
+            </div>
           </>
         )}
       </motion.div>
     </div>
   );
 };
+
 
 export default Devices;
