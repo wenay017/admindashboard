@@ -42,22 +42,42 @@ const Devices = () => {
       setIsLoading(true);
       setError(null);
 
+      // ✅ Fetch from the correct endpoint that returns ALL devices
       const response = await API.get("/sensor-data/devices/all");
       const userRes = await API.get("/users");
 
-      const usersData =
-        userRes.data.data ||
-        userRes.data.users ||
-        userRes.data ||
-        [];
+      console.log("🔍 API Response:", response.data); // DEBUG
 
-      const devicesData = response.data.devices || [];
+      const usersData = userRes.data.data || userRes.data.users || userRes.data || [];
 
-      const formattedDevices = devicesData.map((device) => {
+      // ✅ Handle different response formats
+      let devicesData = [];
+      if (Array.isArray(response.data)) {
+        devicesData = response.data;
+      } else if (response.data.devices) {
+        devicesData = response.data.devices;
+      } else if (response.data.data) {
+        devicesData = response.data.data;
+      } else if (response.data) {
+        devicesData = response.data;
+      }
+
+      console.log("📦 Devices Found:", devicesData.length, devicesData); // DEBUG
+
+      // Filter out duplicates
+      const uniqueDevices = [];
+      const seenIds = new Set();
+
+      devicesData.forEach((device) => {
+        if (device && device.device_id && !seenIds.has(device.device_id)) {
+          seenIds.add(device.device_id);
+          uniqueDevices.push(device);
+        }
+      });
+
+      const formattedDevices = uniqueDevices.map((device) => {
         const usersForDevice = usersData.filter((user) =>
-          user.devices?.some(
-            (d) => d.device_id === device.device_id
-          )
+          user.devices?.some((d) => d.device_id === device.device_id)
         );
 
         return {
@@ -65,14 +85,8 @@ const Devices = () => {
           device_name: device.device_name || "N/A",
           device_location: device.device_location || "N/A",
           device_site_name: device.device_site_name || "N/A",
-          latitude:
-            device.latitude === "NA" || !device.latitude
-              ? "N/A"
-              : device.latitude,
-          longitude:
-            device.longitude === "NA" || !device.longitude
-              ? "N/A"
-              : device.longitude,
+          latitude: device.latitude === "NA" || !device.latitude ? "N/A" : device.latitude,
+          longitude: device.longitude === "NA" || !device.longitude ? "N/A" : device.longitude,
           Usercount: usersForDevice.length,
           _id: device._id,
           assignedUsers: usersForDevice
@@ -81,7 +95,7 @@ const Devices = () => {
 
       setDevices(formattedDevices);
     } catch (err) {
-      console.error("Error loading devices:", err);
+      console.error("❌ Error loading devices:", err);
       setError("Failed to load devices.");
     } finally {
       setIsLoading(false);

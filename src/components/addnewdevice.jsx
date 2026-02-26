@@ -47,11 +47,20 @@ const AddDeviceForm = ({ onDeviceAdded }) => {
     setIsAdding(true);
 
     try {
-      // Remove the POST to /sensor-data/devices - it doesn't exist
-      // Just create the initial sensor data record
+      // Step 1: Create the device record first
+      await API.post("/devices", {
+        device_id: formData.device_id,
+        device_name: formData.device_name,
+        device_location: formData.device_location || "",
+        device_site_name: formData.device_site_name || "",
+        latitude: formData.latitude || "",
+        longitude: formData.longitude || "",
+      });
+
+      // Step 2: Create initial sensor data record
       await API.post("/sensor-data", {
         device_id: formData.device_id,
-        device_name: formData.device_name,  // Add this if your sensor-data endpoint accepts it
+        device_name: formData.device_name,
         data1: 0,
         data2: 0,
         data3: 0,

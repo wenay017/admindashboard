@@ -19,7 +19,7 @@ const AlertsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  // Use localStorage to persist sent alerts across page refreshes
+  // ✅ FIXED: Persist BOTH sent alerts AND processed data
   const getStoredAlerts = () => {
     try {
       const stored = localStorage.getItem('waterAlertSentTimestamps');
@@ -30,13 +30,23 @@ const AlertsPage = () => {
     }
   };
 
+  // ✅ FIXED: NEW - Persist processed data keys
+  const getStoredProcessedData = () => {
+    try {
+      const stored = localStorage.getItem('waterAlertProcessedData');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch (error) {
+      console.error('Error reading processed data:', error);
+      return new Set();
+    }
+  };
+
   const setStoredAlerts = (alertMap) => {
     try {
-      // Clean old entries (older than 1 hour) before storing
       const now = Date.now();
       const cleanMap = new Map();
       for (let [key, value] of alertMap) {
-        if (now - value < 3600000) { // Keep only entries from last hour
+        if (now - value < 3600000) { // Keep only last hour
           cleanMap.set(key, value);
         }
       }
@@ -46,12 +56,42 @@ const AlertsPage = () => {
     }
   };
 
-  // Use refs to track sent alerts and processed data
-  const lastAlertSentRef = useRef(getStoredAlerts());
-  const processedDataRef = useRef(new Map());
+  // ✅ FIXED: NEW - Persist processed data
+  const setStoredProcessedData = (processedSet) => {
+    try {
+      localStorage.setItem('waterAlertProcessedData', JSON.stringify([...processedSet]));
+    } catch (error) {
+      console.error('Error storing processed data:', error);
+    }
+  };
+
+  // ✅ FIXED: Initialize from localStorage and use useState for reactivity
+  const [lastAlertSent, setLastAlertSent] = useState(getStoredAlerts());
+  const [processedDataSet, setProcessedDataSet] = useState(getStoredProcessedData());
   const initialLoadRef = useRef(true);
 
-  // Parse email list from data6
+  // ✅ FIXED: Helper to record sent alert
+  const recordAlertSent = (deviceId) => {
+    const sentTime = Date.now();
+    setLastAlertSent(prev => {
+      const newMap = new Map(prev);
+      newMap.set(deviceId, sentTime);
+      setStoredAlerts(newMap);
+      return newMap;
+    });
+  };
+
+  // ✅ FIXED: Helper to mark data as processed
+  const markDataAsProcessed = (deviceId, timestamp) => {
+    const dataKey = `${deviceId}_${timestamp}`;
+    setProcessedDataSet(prev => {
+      const newSet = new Set(prev);
+      newSet.add(dataKey);
+      setStoredProcessedData(newSet);
+      return newSet;
+    });
+  };
+
   const parseEmailList = (data6String) => {
     if (!data6String || typeof data6String !== 'string') return [];
 
@@ -68,7 +108,6 @@ const AlertsPage = () => {
     return [...new Set(emails)];
   };
 
-  // Send water level alert email
   const sendWaterAlertEmail = async (emails, deviceId, sensorData) => {
     if (!emails || emails.length === 0) {
       console.warn('No valid email addresses found for alert');
@@ -87,7 +126,7 @@ const AlertsPage = () => {
           email: "pinea.notify@gmail.com"
         },
         to: toArray,
-        subject: `🚨 जल स्तर अलर्ट `,
+        subject: `🚨 जल स्तर अलर्ट`,
         textContent: `सावधान:-\nडैम का जल स्तर बढ़ रहा है अतः सुरक्षित जगह सावधान और सुरक्षित रहे।`,
         htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ltr;">
@@ -109,7 +148,7 @@ const AlertsPage = () => {
       const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
-          'api-key': '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',
+          'api-key': import.meta.env.VITE_BREVO_API_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload)
@@ -122,10 +161,8 @@ const AlertsPage = () => {
       const result = await response.json();
       console.log('Water level alert email sent successfully:', result);
 
-      // Record when we sent this alert in both ref and localStorage
-      const sentTime = Date.now();
-      lastAlertSentRef.current.set(deviceId, sentTime);
-      setStoredAlerts(lastAlertSentRef.current);
+      // ✅ FIXED: Record sent alert in state AND localStorage
+      recordAlertSent(deviceId);
 
       return true;
     } catch (error) {
@@ -134,11 +171,10 @@ const AlertsPage = () => {
     }
   };
 
-  // Check if we should send an alert for this device
-  const shouldSendAlert = (deviceId, latestData, isAutoRefresh = false) => {
+  // ✅ FIXED: Improved shouldSendAlertCheck logic
+  const shouldSendAlertCheck = (deviceId, latestData, isAutoRefresh = false) => {
     if (!latestData) return false;
 
-    const lastAlertTime = lastAlertSentRef.current.get(deviceId);
     const dataTimestamp = new Date(latestData.createdAt).getTime();
     const now = Date.now();
 
@@ -148,31 +184,30 @@ const AlertsPage = () => {
       return false;
     }
 
-    // Don't send alert if we sent one in the last 1 minute (60000 ms)
+    // ✅ FIXED: Use state-based lastAlertSent instead of ref
+    const lastAlertTime = lastAlertSent.get(deviceId);
     if (lastAlertTime && (now - lastAlertTime < 60000)) {
       console.log(`Alert for ${deviceId} skipped: Sent recently (${Math.round((now - lastAlertTime) / 1000)}s ago)`);
       return false;
     }
 
-    // Check if we've already processed this specific data (using data timestamp as key)
+    // ✅ FIXED: Check processedDataSet from state
     const dataKey = `${deviceId}_${dataTimestamp}`;
-    if (processedDataRef.current.has(dataKey)) {
+    if (processedDataSet.has(dataKey)) {
       console.log(`Alert for ${deviceId} skipped: Data already processed`);
       return false;
     }
 
-    // For initial load, don't send alerts for existing data
-    if (isAutoRefresh && initialLoadRef.current) {
+    // ✅ FIXED: Better initial load handling
+    // Only skip on VERY FIRST load (before any data is fetched)
+    if (initialLoadRef.current && isAutoRefresh === false) {
       console.log(`Alert for ${deviceId} skipped: Initial page load`);
       return false;
     }
 
-    // Mark this specific data as processed
-    processedDataRef.current.set(dataKey, true);
     return true;
   };
 
-  // Fetch alert devices and their data
   const fetchAlertDevices = async (isAutoRefresh = false) => {
     try {
       if (!isAutoRefresh) {
@@ -182,15 +217,12 @@ const AlertsPage = () => {
 
       console.log('Starting to fetch alert devices...');
 
-      // Step 1: Get all devices from the API
-      console.log('Fetching from /sensor-data/devices/all');
       const devicesResponse = await API.get('/sensor-data/devices/all');
       console.log('Devices API response:', devicesResponse);
 
       const allDevices = devicesResponse.data.devices || [];
       console.log('All devices loaded:', allDevices.length, allDevices);
 
-      // Step 2: Filter devices that have "-alert" in their device_id
       const alertDevicesList = allDevices.filter(device => {
         const hasAlert = device.device_id && device.device_id.toLowerCase().includes('-alert');
         if (hasAlert) {
@@ -207,18 +239,15 @@ const AlertsPage = () => {
         return;
       }
 
-      // Step 3: Fetch sensor data for each alert device
       const devicesWithData = await Promise.all(
         alertDevicesList.map(async (device) => {
           try {
             console.log(`Fetching data for device: ${device.device_id}`);
 
-            // Fetch sensor data for this specific device
             const dataResponse = await API.get(`/sensor-data?device_id=${device.device_id}`);
             const deviceData = dataResponse.data.data || dataResponse.data || [];
             console.log(`Data for ${device.device_id}:`, deviceData.length, 'records', deviceData);
 
-            // Get the latest entry (most recent createdAt)
             const latestData = deviceData.length > 0
               ? deviceData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
               : null;
@@ -227,8 +256,11 @@ const AlertsPage = () => {
 
             console.log(`Device ${device.device_id}: ${emails.length} emails found`);
 
-            // Auto-send water level alert only if conditions are met
-            if (emails.length > 0 && latestData && shouldSendAlert(device.device_id, latestData, isAutoRefresh)) {
+            // ✅ FIXED: Use improved shouldSendAlertCheck
+            if (emails.length > 0 && latestData && shouldSendAlertCheck(device.device_id, latestData, isAutoRefresh)) {
+              const dataTimestamp = new Date(latestData.createdAt).getTime();
+              markDataAsProcessed(device.device_id, dataTimestamp);
+
               console.log(`Sending alert for ${device.device_id} to ${emails.length} recipients`);
               try {
                 const emailSent = await sendWaterAlertEmail(emails, device.device_id, latestData);
@@ -244,11 +276,8 @@ const AlertsPage = () => {
               console.log(`Alert conditions not met for ${device.device_id}:`, {
                 hasEmails: emails.length > 0,
                 hasData: !!latestData,
-                shouldSend: shouldSendAlert(device.device_id, latestData, isAutoRefresh),
+                shouldSend: shouldSendAlertCheck(device.device_id, latestData, isAutoRefresh),
                 dataAge: latestData ? `${Math.round((Date.now() - new Date(latestData.createdAt).getTime()) / 1000)}s` : 'N/A',
-                lastAlert: lastAlertSentRef.current.get(device.device_id)
-                  ? `${Math.round((Date.now() - lastAlertSentRef.current.get(device.device_id)) / 1000)}s ago`
-                  : 'Never'
               });
             }
 
@@ -268,7 +297,7 @@ const AlertsPage = () => {
               emailCount: emails.length,
               totalReadings: deviceData.length,
               status: latestData ? "active" : "inactive",
-              lastAlertSent: lastAlertSentRef.current.get(device.device_id),
+              lastAlertSent: lastAlertSent.get(device.device_id),
               dataAge: latestData ? Math.round((Date.now() - new Date(latestData.createdAt).getTime()) / 1000) : null
             };
           } catch (error) {
@@ -310,7 +339,7 @@ const AlertsPage = () => {
       }
       setRefreshing(false);
 
-      // Mark initial load as complete after first successful load
+      // ✅ FIXED: Mark initial load ONLY after first successful fetch
       if (initialLoadRef.current) {
         initialLoadRef.current = false;
         console.log('Initial load completed, future refreshes will send alerts for new data');
@@ -322,11 +351,11 @@ const AlertsPage = () => {
     // Initial load
     fetchAlertDevices(false);
 
-    // Auto-refresh every 10 seconds for new data
+    // Auto-refresh every 10 seconds
     const interval = setInterval(() => {
       console.log('Auto-refreshing alert devices...');
       fetchAlertDevices(true);
-    }, 10000); // 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);
@@ -355,7 +384,6 @@ const AlertsPage = () => {
     }
   };
 
-  // Filter devices based on search
   const filteredDevices = alertDevices.filter(device =>
     device.device_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     device.device_location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
