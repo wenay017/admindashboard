@@ -1,9 +1,18 @@
+/* Alerts.css - Fixed Version */
+
 .alerts-container {
   padding: 2rem;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   min-height: 100vh;
   color: #e2e8f0;
   font-family: 'Inter', sans-serif;
+  position: relative;
+  z-index: 1;
+}
+
+/* Reset any interference from UserManagement CSS */
+.alerts-container * {
+  box-sizing: border-box;
 }
 
 .alerts-header {
@@ -25,20 +34,20 @@
 
 .header-icon {
   font-size: 2rem;
-  color: #ef4444;
+  color: #f59e0b;
 }
 
 .header-title h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #ef4444, #f97316);
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
 }
 
 .device-count {
-  background: #ef4444;
+  background: #f59e0b;
   color: white;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -66,12 +75,13 @@
   max-width: 400px;
 }
 
-.search-icon {
+.search-container .search-icon {
   position: absolute;
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
   color: #64748b;
+  z-index: 2;
 }
 
 .search-input {
@@ -87,12 +97,12 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
 }
 
 .refresh-btn {
-  background: linear-gradient(135deg, #ef4444, #f97316);
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
   border: none;
   color: white;
   padding: 0.75rem 1.5rem;
@@ -112,7 +122,7 @@
 
 .refresh-btn:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .spinning {
@@ -124,192 +134,226 @@
   to { transform: rotate(360deg); }
 }
 
-.error-message {
-  background: #ef4444;
-  color: white;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  text-align: center;
-  font-weight: 600;
+.devices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.alerts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 1.5rem;
-}
-
-.alert-card {
+.device-card {
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   border: 1px solid #475569;
   border-radius: 15px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  position: relative;
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.alert-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #ef4444, #f97316);
+.device-card:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
 }
 
-.alert-card:hover {
-  border-color: #ef4444;
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
-}
-
-.card-header {
+.device-header {
+  padding: 1.5rem;
+  cursor: pointer;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  transition: background 0.3s ease;
 }
 
-.device-title {
+.device-header:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.device-header .device-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
-.water-icon {
-  color: #3b82f6;
+.device-warning-icon {
   font-size: 1.5rem;
+  color: #f59e0b;
 }
 
-.device-title h3 {
+.device-header .device-info h3 {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 600;
   color: #f8fafc;
 }
 
-.severity-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 600;
+.device-meta {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
 }
 
-.severity-badge.high {
-  background: #ef4444;
-  color: white;
-}
-
-.card-content {
+.device-stats {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 1rem;
 }
 
-.alert-message {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(239, 68, 68, 0.1);
-  padding: 0.75rem;
-  border-radius: 8px;
-  border-left: 4px solid #ef4444;
+.garbage-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
-.alert-icon {
-  color: #ef4444;
+.expand-icon {
+  font-size: 1.2rem;
+  color: #94a3b8;
+  transition: transform 0.3s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.device-details {
+  padding: 1.5rem;
+  border-top: 1px solid #475569;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.summary-info {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #475569;
+}
+
+.summary-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.summary-item .label {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.summary-item .value {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.garbage-records h4,
+.context-info h4 {
+  margin: 0 0 1rem 0;
+  color: #f8fafc;
   font-size: 1rem;
 }
 
-.alert-message span {
-  color: #f8fafc;
-  font-weight: 500;
+.table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
 }
 
-.device-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.garbage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
 }
 
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.label {
+.garbage-table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
   color: #94a3b8;
-  font-size: 0.9rem;
+  border-bottom: 2px solid #475569;
+  background: rgba(0, 0, 0, 0.2);
 }
 
-.value {
+.garbage-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #334155;
   color: #e2e8f0;
+}
+
+.garbage-row {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.garbage-value {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.expected-value {
+  color: #10b981;
   font-weight: 500;
 }
 
-.email-section {
-  background: rgba(59, 130, 246, 0.1);
+.severity-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.severity-badge.critical {
+  background: #dc2626;
+  color: white;
+}
+
+.severity-badge.high {
+  background: #f59e0b;
+  color: white;
+}
+
+.severity-badge.medium {
+  background: #fbbf24;
+  color: #333;
+}
+
+.garbage-type-badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.context-info {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #475569;
+}
+
+.context-record {
+  background: rgba(0, 0, 0, 0.2);
   padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #3b82f6;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
 }
 
-.email-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.context-timestamp {
+  font-weight: 600;
+  color: #94a3b8;
   margin-bottom: 0.5rem;
-  color: #3b82f6;
-  font-weight: 600;
+  font-size: 0.85rem;
 }
 
-.email-list {
+.context-values {
   display: flex;
+  gap: 1.5rem;
   flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.email-badge {
-  background: #3b82f6;
-  color: white;
-  padding: 0.3rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-}
-
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-.test-alert-btn {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid #ef4444;
-  color: #ef4444;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
   font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-}
-
-.test-alert-btn:hover:not(:disabled) {
-  background: #ef4444;
-  color: white;
-  transform: translateY(-1px);
-}
-
-.test-alert-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  color: #e2e8f0;
 }
 
 .no-devices {
@@ -317,7 +361,8 @@
   padding: 3rem;
   color: #94a3b8;
   font-size: 1.1rem;
-  grid-column: 1 / -1;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
 }
 
 .loading-container {
@@ -332,9 +377,48 @@
 .loading-spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(239, 68, 68, 0.2);
-  border-top-color: #ef4444;
+  border: 4px solid rgba(245, 158, 11, 0.2);
+  border-top-color: #f59e0b;
   border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Override any global popup styles that might affect alerts */
+.alerts-container .devices-popup,
+.alerts-container .available-devices-popup,
+.alerts-container .user-detail-popup {
+  display: none !important;
+}
+
+/* Ensure alerts container doesn't inherit popup styles */
+.alerts-container .device-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+.alerts-container .device-info div {
+  margin-top: 0 !important;
+}
+
+/* Fix for any conflicting button styles */
+.alerts-container button {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  border: none;
+}
+
+.alerts-container button:hover {
+  transform: translateY(-2px);
+}
+
+/* Ensure proper spacing for device info in alerts */
+.alerts-container .device-info h3 {
+  margin: 0 !important;
+  font-size: 1.2rem !important;
+}
+
+.alerts-container .device-meta {
+  margin-top: 0.25rem !important;
 }
 
 /* Responsive Design */
@@ -352,16 +436,64 @@
     max-width: none;
   }
 
-  .alerts-grid {
-    grid-template-columns: 1fr;
-  }
-
   .header-title {
     flex-direction: column;
     gap: 0.5rem;
   }
 
   .header-title h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+
+  .device-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .garbage-table {
+    font-size: 0.75rem;
+  }
+
+  .garbage-table th,
+  .garbage-table td {
+    padding: 0.5rem;
+  }
+
+  .summary-info {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .context-values {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .alerts-container {
+    padding: 0.75rem;
+  }
+  
+  .device-header {
+    padding: 1rem;
+  }
+  
+  .device-details {
+    padding: 1rem;
+  }
+  
+  .garbage-table th,
+  .garbage-table td {
+    padding: 0.4rem;
+    font-size: 0.7rem;
+  }
+  
+  .severity-badge,
+  .garbage-type-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
   }
 }

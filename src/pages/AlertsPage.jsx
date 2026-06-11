@@ -1,394 +1,821 @@
-import React, { useState, useEffect, useRef } from "react";
+// // export default AlertsPage;
+// import React, { useEffect, useState } from "react";
+// import { motion } from "framer-motion";
+// import {
+//   FaExclamationTriangle,
+//   FaSearch,
+//   FaSync,
+//   FaTrash,
+//   FaTachometerAlt,
+//   FaCheck,
+//   FaTimes
+// } from "react-icons/fa";
+// import API from "../services/api";
+// import "../styles/AlertsPage.css";
+
+// const AlertsPage = () => {
+//   const [devicesWithGarbage, setDevicesWithGarbage] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [expandedDevice, setExpandedDevice] = useState(null);
+//   const [refreshing, setRefreshing] = useState(false);
+//   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
+//   const [deletingId, setDeletingId] = useState(null);
+//   const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+//   // Check if device should be excluded (ends with _10 or matches pattern)
+//   const shouldExcludeDevice = (deviceId) => {
+//     if (!deviceId) return true;
+    
+//     const idStr = String(deviceId);
+    
+//     // Exclude if device ID ends with _10
+//     if (idStr.endsWith('_10')) {
+//       console.log(`Excluding device ${deviceId}: ends with _10`);
+//       return true;
+//     }
+    
+//     return false;
+//   };
+
+//   // Check if device is specifically "flow-meter"
+//   const isFlowMeter = (device) => {
+//     const deviceType = (device.device_type || device.type || "").toLowerCase();
+//     const deviceName = (device.device_name || device.name || "").toLowerCase();
+//     const deviceId = (device.device_id || device.id || "").toLowerCase();
+    
+//     // Only include devices with type "flow-meter"
+//     return deviceType === 'flow-meter' || 
+//            deviceType.includes('flow-meter') ||
+//            deviceName === 'flow-meter' ||
+//            deviceName.includes('flow-meter');
+//   };
+
+//   // Thorough check for CRITICAL Total Cumulative Flow (data3) drops
+//   const detectCriticalCumulativeFlowDrop = (sensorData) => {
+//     if (!sensorData || sensorData.length < 2) return [];
+    
+//     // Sort by timestamp
+//     const sortedData = [...sensorData].sort((a, b) => 
+//       new Date(a.createdAt) - new Date(b.createdAt)
+//     );
+    
+//     const garbageRecords = [];
+//     let lastGoodValue = null;
+//     let lastGoodRecord = null;
+    
+//     for (let i = 0; i < sortedData.length; i++) {
+//       const current = sortedData[i];
+      
+//       if (current.data3 === undefined) continue;
+      
+//       if (lastGoodValue === null) {
+//         lastGoodValue = current.data3;
+//         lastGoodRecord = current;
+//         continue;
+//       }
+      
+//       // Skip exact 0 values (device offline)
+//       if (current.data3 === 0) {
+//         console.log(`Device offline at ${current.createdAt}: value 0, ignoring`);
+//         continue;
+//       }
+      
+//       // Check if current value is LESS than last good value (DROP = GARBAGE)
+//       if (current.data3 < lastGoodValue) {
+//         const dropAmount = (lastGoodValue - current.data3).toFixed(3);
+//         const dropPercentage = ((lastGoodValue - current.data3) / lastGoodValue) * 100;
+        
+//         // IGNORE if the dropped value is greater than 10
+//         if (current.data3 > 10) {
+//           console.log(`Skipping: dropped value ${current.data3} is > 10, not garbage`);
+//           // Still update lastGoodValue if the value is reasonable
+//           if (current.data3 >= lastGoodValue * 0.8) {
+//             lastGoodValue = current.data3;
+//             lastGoodRecord = current;
+//           }
+//           continue;
+//         }
+        
+//         if (dropPercentage > 80) {
+//           garbageRecords.push({
+//             ...current,
+//             _id: current._id,
+//             garbageType: "CRITICAL Flow Drop",
+//             previousValue: lastGoodValue,
+//             currentValue: current.data3,
+//             dropAmount: dropAmount,
+//             dropPercentage: dropPercentage.toFixed(2),
+//             previousRecord: lastGoodRecord,
+//             timestamp: current.createdAt,
+//             severity: "Critical"
+//           });
+//         }
+//       } else {
+//         if (current.data3 >= lastGoodValue) {
+//           lastGoodValue = current.data3;
+//           lastGoodRecord = current;
+//         }
+//       }
+//     }
+    
+//     return garbageRecords;
+//   };
+
+//   // Handle single delete with verification
+//   const handleDelete = async (record, deviceId) => {
+//     // Show verification dialog
+//     const userConfirmed = window.confirm(
+//       `⚠️ VERIFY BEFORE DELETING ⚠️\n\n` +
+//       `Device: ${deviceId}\n` +
+//       `Timestamp: ${new Date(record.timestamp).toLocaleString()}\n` +
+//       `Previous Good Value: ${record.previousValue?.toFixed(3)} m³\n` +
+//       `Garbage Value: ${record.currentValue?.toFixed(3)} m³\n` +
+//       `Drop: ${record.dropAmount} m³ (${record.dropPercentage}%)\n\n` +
+//       `Are you sure you want to delete this garbage data entry?\n` +
+//       `This action cannot be undone!`
+//     );
+    
+//     if (!userConfirmed) return;
+    
+//     setDeletingId(record._id);
+    
+//     try {
+//       await API.delete(`/sensor-data/${record._id}`);
+//       console.log(`Deleted record ${record._id} successfully`);
+      
+//       // Refresh the data after deletion
+//       await fetchAllDevicesGarbageData();
+//       alert(`✅ Successfully deleted garbage data entry from ${new Date(record.timestamp).toLocaleString()}`);
+//     } catch (error) {
+//       console.error("Error deleting data:", error);
+//       alert(`❌ Failed to delete: ${error.message}`);
+//     } finally {
+//       setDeletingId(null);
+//     }
+//   };
+
+//   // Get all devices that have _10 suffix to exclude
+//   const getExcludedDeviceIds = (allDevices) => {
+//     const excludedIds = new Set();
+    
+//     allDevices.forEach(device => {
+//       const deviceId = device.device_id || device.id;
+//       if (deviceId && String(deviceId).endsWith('_10')) {
+//         excludedIds.add(String(deviceId));
+//         // Extract base ID (without suffix)
+//         const baseId = String(deviceId).split('_')[0];
+//         excludedIds.add(baseId);
+//         console.log(`Will exclude: ${deviceId} and base: ${baseId}`);
+//       }
+//     });
+    
+//     return excludedIds;
+//   };
+
+//   const fetchAllDevicesGarbageData = async () => {
+//     try {
+//       setRefreshing(true);
+//       setScanProgress({ current: 0, total: 0 });
+      
+//       // Fetch all devices
+//       const devicesResponse = await API.get('/devices');
+//       let allDevices = [];
+      
+//       if (devicesResponse.data && Array.isArray(devicesResponse.data)) {
+//         allDevices = devicesResponse.data;
+//       } else if (devicesResponse.data && Array.isArray(devicesResponse.data.devices)) {
+//         allDevices = devicesResponse.data.devices;
+//       }
+      
+//       if (allDevices.length === 0) {
+//         setDevicesWithGarbage([]);
+//         setLoading(false);
+//         setRefreshing(false);
+//         return;
+//       }
+      
+//       // Get excluded device IDs (those ending with _10 and their base IDs)
+//       const excludedIds = getExcludedDeviceIds(allDevices);
+      
+//       // Filter devices: only "flow-meter" type and not excluded
+//       const filteredDevices = allDevices.filter(device => {
+//         const deviceId = device.device_id || device.id;
+//         if (!deviceId) return false;
+        
+//         const idStr = String(deviceId);
+        
+//         // Check if device ID or its base ID is excluded
+//         const baseId = idStr.split('_')[0];
+//         if (excludedIds.has(idStr) || excludedIds.has(baseId)) {
+//           console.log(`Excluding ${deviceId}: matches excluded pattern`);
+//           return false;
+//         }
+        
+//         // Only include flow-meter devices
+//         return isFlowMeter(device);
+//       });
+      
+//       console.log(`Total devices: ${allDevices.length}, Flow-meters: ${filteredDevices.length}`);
+//       setScanProgress({ current: 0, total: filteredDevices.length });
+      
+//       const devicesWithIssues = [];
+      
+//       // Process filtered devices in parallel
+//       const promises = filteredDevices.map(async (device, index) => {
+//         const deviceId = device.device_id || device.id;
+//         if (!deviceId) return null;
+        
+//         try {
+//           const sensorResponse = await API.get(`/sensor-data/device/${deviceId}`);
+//           let sensorData = [];
+          
+//           if (sensorResponse.data && Array.isArray(sensorResponse.data)) {
+//             sensorData = sensorResponse.data;
+//           } else if (sensorResponse.data && Array.isArray(sensorResponse.data.data)) {
+//             sensorData = sensorResponse.data.data;
+//           }
+          
+//           setScanProgress(prev => ({ ...prev, current: index + 1 }));
+          
+//           if (sensorData.length < 2) return null;
+          
+//           const garbageRecords = detectCriticalCumulativeFlowDrop(sensorData);
+          
+//           if (garbageRecords.length > 0) {
+//             return {
+//               device_id: deviceId,
+//               device_name: device.device_name || device.name || deviceId,
+//               device_type: device.device_type || device.type || "flow-meter",
+//               device_location: device.device_location || device.location || "Unknown",
+//               device_site_name: device.device_site_name,
+//               totalGarbageRecords: garbageRecords.length,
+//               totalReadings: sensorData.length,
+//               garbageRecords: garbageRecords,
+//               firstGarbageDate: garbageRecords[0]?.createdAt,
+//               lastGarbageDate: garbageRecords[garbageRecords.length - 1]?.createdAt
+//             };
+//           }
+//         } catch (error) {
+//           console.error(`Error processing ${deviceId}:`, error);
+//         }
+//         return null;
+//       });
+      
+//       const results = await Promise.all(promises);
+//       const validResults = results.filter(r => r !== null);
+      
+//       validResults.sort((a, b) => b.totalGarbageRecords - a.totalGarbageRecords);
+//       setDevicesWithGarbage(validResults);
+      
+//     } catch (error) {
+//       console.error("Error fetching garbage data:", error);
+//     } finally {
+//       setLoading(false);
+//       setRefreshing(false);
+//       setScanProgress({ current: 0, total: 0 });
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchAllDevicesGarbageData();
+    
+//     const interval = setInterval(() => {
+//       fetchAllDevicesGarbageData();
+//     }, 60000);
+    
+//     return () => clearInterval(interval);
+//   }, []);
+
+//   const getSeverityBadge = () => {
+//     return <span className="severity-badge critical">CRITICAL</span>;
+//   };
+
+//   const filteredDevices = devicesWithGarbage.filter(device =>
+//     device.device_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//     (device.device_name && device.device_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+//     (device.device_location && device.device_location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+//     (device.device_site_name && device.device_site_name.toLowerCase().includes(searchTerm.toLowerCase()))
+//   );
+
+//   const totalGarbageRecords = devicesWithGarbage.reduce((sum, device) => sum + device.totalGarbageRecords, 0);
+
+//   if (loading) {
+//     return (
+//       <div className="alerts-container">
+//         <div className="loading-container">
+//           <motion.div
+//             className="loading-spinner"
+//             animate={{ rotate: 360 }}
+//             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+//           />
+//           <p>Scanning flow-meters for critical cumulative flow drops...</p>
+//           {scanProgress.total > 0 && (
+//             <div className="progress-bar-container">
+//               <div 
+//                 className="progress-bar" 
+//                 style={{ width: `${(scanProgress.current / scanProgress.total) * 100}%` }}
+//               />
+//               <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
+//                 Checking flow-meter {scanProgress.current} of {scanProgress.total}
+//               </p>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="alerts-container">
+//       {/* Header */}
+//       <div className="alerts-header">
+//         <motion.div
+//           className="header-content"
+//           initial={{ opacity: 0, y: -20 }}
+//           animate={{ opacity: 1, y: 0 }}
+//           transition={{ duration: 0.5 }}
+//         >
+//           <div className="header-title">
+//             <FaTachometerAlt className="header-icon" />
+//             <h1>Flow-Meter - Critical Drop Detection</h1>
+//             <span className="device-count">{totalGarbageRecords} critical drops</span>
+//           </div>
+//           <p className="header-subtitle">
+//             Found in {devicesWithGarbage.length} flow-meters | Last scan: {new Date().toLocaleTimeString()}
+//           </p>
+//           <p className="header-note">
+//             🔍 Only showing devices with type: <strong>flow-meter</strong>
+//             <br />
+//             🚫 Excluding devices with _10 suffix and their matching base IDs
+//             <br />
+//             ⚠️ Detecting cumulative flow drops &gt;80% | Values &gt;10 are ignored
+//             <br />
+//             📌 Exact 0 values (device offline) are ignored
+//             <br />
+//             🗑️ Click delete icon to remove garbage data (verification required)
+//           </p>
+//         </motion.div>
+//       </div>
+
+//       {/* Controls */}
+//       <div className="alerts-controls">
+//         <div className="search-container">
+//           <FaSearch className="search-icon" />
+//           <input
+//             type="text"
+//             placeholder="Search by device ID, name, or location..."
+//             value={searchTerm}
+//             onChange={(e) => setSearchTerm(e.target.value)}
+//             className="search-input"
+//           />
+//         </div>
+//         <motion.button
+//           onClick={fetchAllDevicesGarbageData}
+//           disabled={refreshing}
+//           className="refresh-btn"
+//           whileHover={{ scale: 1.05 }}
+//           whileTap={{ scale: 0.95 }}
+//         >
+//           <FaSync className={refreshing ? 'spinning' : ''} />
+//           {refreshing ? 'Scanning...' : 'Scan Now'}
+//         </motion.button>
+//       </div>
+
+//       {/* Devices List */}
+//       <div className="devices-list">
+//         {filteredDevices.length === 0 ? (
+//           <div className="no-devices">
+//             {searchTerm ? 'No flow-meters match your search' : 'No critical drops detected in flow-meters'}
+//             {devicesWithGarbage.length === 0 && !searchTerm && (
+//               <div style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.7 }}>
+//                 ✅ All flow-meters have normal cumulative flow (monotonically increasing)
+//                 <br />
+//                 <span style={{ fontSize: '0.8rem' }}>📌 Only devices with type "flow-meter" are scanned</span>
+//                 <br />
+//                 <span style={{ fontSize: '0.8rem' }}>📌 Devices with _10 suffix and their matches are excluded</span>
+//                 <br />
+//                 <span style={{ fontSize: '0.8rem' }}>📌 Values &gt;10 are ignored (not garbage)</span>
+//                 <br />
+//                 <span style={{ fontSize: '0.8rem' }}>📌 Exact 0 values (device offline) are ignored</span>
+//               </div>
+//             )}
+//           </div>
+//         ) : (
+//           filteredDevices.map((device, index) => (
+//             <motion.div
+//               key={device.device_id}
+//               className="device-card"
+//               initial={{ opacity: 0, y: 20 }}
+//               animate={{ opacity: 1, y: 0 }}
+//               transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.5) }}
+//             >
+//               <div 
+//                 className="device-header"
+//                 onClick={() => setExpandedDevice(expandedDevice === device.device_id ? null : device.device_id)}
+//               >
+//                 <div className="device-info">
+//                   <FaExclamationTriangle className="device-warning-icon" />
+//                   <div>
+//                     <h3>{device.device_id}</h3>
+//                     <div className="device-meta">
+//                       <span className="device-type-badge flow-meter">flow-meter</span>
+//                       {device.device_location && <span>📍 {device.device_location}</span>}
+//                       {device.device_site_name && <span> • 🏭 {device.device_site_name}</span>}
+//                     </div>
+//                   </div>
+//                 </div>
+//                 <div className="device-stats">
+//                   <span className="garbage-badge critical-badge">{device.totalGarbageRecords} critical drops</span>
+//                   <span className={`expand-icon ${expandedDevice === device.device_id ? 'expanded' : ''}`}>▼</span>
+//                 </div>
+//               </div>
+
+//               {expandedDevice === device.device_id && (
+//                 <motion.div 
+//                   className="device-details"
+//                   initial={{ opacity: 0 }}
+//                   animate={{ opacity: 1 }}
+//                   transition={{ duration: 0.2 }}
+//                 >
+//                   <div className="summary-info">
+//                     <div className="summary-item">
+//                       <span className="label">Device Type:</span>
+//                       <span className="value"><strong>flow-meter</strong></span>
+//                     </div>
+//                     <div className="summary-item">
+//                       <span className="label">Total Readings:</span>
+//                       <span className="value">{device.totalReadings}</span>
+//                     </div>
+//                     <div className="summary-item">
+//                       <span className="label">Critical Drops:</span>
+//                       <span className="value" style={{ color: '#dc2626', fontWeight: 'bold' }}>{device.totalGarbageRecords}</span>
+//                     </div>
+//                   </div>
+
+//                   <div className="garbage-records">
+//                     <h4>Critical Cumulative Flow Drops (&gt;80% drop & value ≤ 10):</h4>
+//                     <div className="table-wrapper">
+//                       <table className="garbage-table">
+//                         <thead>
+//                           <tr>
+//                             <th>Timestamp</th>
+//                             <th>Flow Rate (m³/hr)</th>
+//                             <th>Previous Good Value (m³)</th>
+//                             <th>Garbage Value (m³)</th>
+//                             <th>Drop Amount</th>
+//                             <th>Drop %</th>
+//                             <th>Severity</th>
+//                             <th>Action</th>
+//                           </tr>
+//                         </thead>
+//                         <tbody>
+//                           {device.garbageRecords.map((record, idx) => (
+//                             <tr key={idx} className="garbage-row critical-row">
+//                               <td>{new Date(record.timestamp).toLocaleString()}</td>
+//                               <td>{record.data2?.toFixed(2)} m³/hr</td>
+//                               <td className="expected-value">{record.previousValue?.toFixed(3)} m³</td>
+//                               <td className="garbage-value">{record.currentValue?.toFixed(3)} m³</td>
+//                               <td className="garbage-value">- {record.dropAmount} m³</td>
+//                               <td className="garbage-value">{record.dropPercentage}%</td>
+//                               <td>{getSeverityBadge()}</td>
+//                               <td className="action-cell">
+//                                 <button
+//                                   onClick={() => handleDelete(record, device.device_id)}
+//                                   disabled={deletingId === record._id}
+//                                   className="delete-garbage-btn"
+//                                   title="Delete this garbage data entry"
+//                                 >
+//                                   {deletingId === record._id ? (
+//                                     <span className="deleting-spinner">⏳</span>
+//                                   ) : (
+//                                     <FaTrash />
+//                                   )}
+//                                 </button>
+//                               </td>
+//                             </tr>
+//                           ))}
+//                         </tbody>
+//                       </table>
+//                     </div>
+//                   </div>
+
+//                   <div className="context-info">
+//                     <div className="critical-warning">
+//                       <FaExclamationTriangle style={{ marginRight: '0.5rem' }} />
+//                       <strong>CRITICAL ISSUE:</strong> Cumulative flow dropped by &gt;80% (value ≤ 10)
+//                     </div>
+//                     <div className="context-record" style={{ background: 'rgba(220, 38, 38, 0.15)', borderLeft: '3px solid #dc2626', marginTop: '1rem' }}>
+//                       <div className="context-values">
+//                         <span>⚠️ Cumulative flow should NEVER decrease</span>
+//                         <span>⚠️ This indicates GARBAGE data from flow-meter</span>
+//                         <span>⚠️ Click the delete button to remove (verification required)</span>
+//                         <span style={{ color: '#fbbf24' }}>📌 Only flow-meter devices are shown</span>
+//                         <span style={{ color: '#fbbf24' }}>📌 Devices with _10 suffix and their matches are excluded</span>
+//                         <span style={{ color: '#fbbf24' }}>📌 Values &gt;10 are ignored (not considered garbage)</span>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </motion.div>
+//               )}
+//             </motion.div>
+//           ))
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default AlertsPage;
+// export default AlertsPage;
+import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   FaExclamationTriangle,
-  FaBell,
   FaSearch,
-  FaEnvelope,
   FaSync,
-  FaWater,
-  FaMapMarkerAlt
+  FaTrash,
+  FaTachometerAlt,
+  FaCheck,
+  FaTimes
 } from "react-icons/fa";
 import API from "../services/api";
 import "../styles/AlertsPage.css";
 
 const AlertsPage = () => {
-  const [alertDevices, setAlertDevices] = useState([]);
+  const [devicesWithGarbage, setDevicesWithGarbage] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedDevice, setExpandedDevice] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
+  const [deletingId, setDeletingId] = useState(null);
 
-  // ✅ FIXED: Persist BOTH sent alerts AND processed data
-  const getStoredAlerts = () => {
-    try {
-      const stored = localStorage.getItem('waterAlertSentTimestamps');
-      return stored ? new Map(JSON.parse(stored)) : new Map();
-    } catch (error) {
-      console.error('Error reading stored alerts:', error);
-      return new Map();
-    }
+  // Check if device is specifically "flow-meter"
+  const isFlowMeter = (device) => {
+    const deviceType = (device.device_type || device.type || "").toLowerCase();
+    const deviceName = (device.device_name || device.name || "").toLowerCase();
+    
+    return deviceType === 'flow-meter' || 
+           deviceType.includes('flow-meter') ||
+           deviceName === 'flow-meter' ||
+           deviceName.includes('flow-meter');
   };
 
-  // ✅ FIXED: NEW - Persist processed data keys
-  const getStoredProcessedData = () => {
-    try {
-      const stored = localStorage.getItem('waterAlertProcessedData');
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch (error) {
-      console.error('Error reading processed data:', error);
-      return new Set();
-    }
-  };
-
-  const setStoredAlerts = (alertMap) => {
-    try {
-      const now = Date.now();
-      const cleanMap = new Map();
-      for (let [key, value] of alertMap) {
-        if (now - value < 3600000) { // Keep only last hour
-          cleanMap.set(key, value);
+  // Thorough check for CRITICAL Total Cumulative Flow (data3) drops
+  const detectCriticalCumulativeFlowDrop = (sensorData) => {
+    if (!sensorData || sensorData.length < 2) return [];
+    
+    const sortedData = [...sensorData].sort((a, b) => 
+      new Date(a.createdAt) - new Date(b.createdAt)
+    );
+    
+    const garbageRecords = [];
+    let lastGoodValue = null;
+    let lastGoodRecord = null;
+    
+    for (let i = 0; i < sortedData.length; i++) {
+      const current = sortedData[i];
+      
+      if (current.data3 === undefined) continue;
+      
+      if (lastGoodValue === null) {
+        lastGoodValue = current.data3;
+        lastGoodRecord = current;
+        continue;
+      }
+      
+      if (current.data3 === 0) continue;
+      
+      if (current.data3 < lastGoodValue) {
+        const dropAmount = (lastGoodValue - current.data3).toFixed(3);
+        const dropPercentage = ((lastGoodValue - current.data3) / lastGoodValue) * 100;
+        
+        if (current.data3 > 10) {
+          if (current.data3 >= lastGoodValue * 0.8) {
+            lastGoodValue = current.data3;
+            lastGoodRecord = current;
+          }
+          continue;
+        }
+        
+        if (dropPercentage > 80) {
+          garbageRecords.push({
+            ...current,
+            _id: current._id,
+            garbageType: "CRITICAL Flow Drop",
+            previousValue: lastGoodValue,
+            currentValue: current.data3,
+            dropAmount: dropAmount,
+            dropPercentage: dropPercentage.toFixed(2),
+            previousRecord: lastGoodRecord,
+            timestamp: current.createdAt,
+            severity: "Critical"
+          });
+        }
+      } else {
+        if (current.data3 >= lastGoodValue) {
+          lastGoodValue = current.data3;
+          lastGoodRecord = current;
         }
       }
-      localStorage.setItem('waterAlertSentTimestamps', JSON.stringify([...cleanMap]));
-    } catch (error) {
-      console.error('Error storing alerts:', error);
     }
+    
+    return garbageRecords;
   };
 
-  // ✅ FIXED: NEW - Persist processed data
-  const setStoredProcessedData = (processedSet) => {
-    try {
-      localStorage.setItem('waterAlertProcessedData', JSON.stringify([...processedSet]));
-    } catch (error) {
-      console.error('Error storing processed data:', error);
-    }
-  };
-
-  // ✅ FIXED: Initialize from localStorage and use useState for reactivity
-  const [lastAlertSent, setLastAlertSent] = useState(getStoredAlerts());
-  const [processedDataSet, setProcessedDataSet] = useState(getStoredProcessedData());
-  const initialLoadRef = useRef(true);
-
-  // ✅ FIXED: Helper to record sent alert
-  const recordAlertSent = (deviceId) => {
-    const sentTime = Date.now();
-    setLastAlertSent(prev => {
-      const newMap = new Map(prev);
-      newMap.set(deviceId, sentTime);
-      setStoredAlerts(newMap);
-      return newMap;
+  // Get all devices that have _10 suffix to exclude
+  const getExcludedDeviceIds = (allDevices) => {
+    const excludedIds = new Set();
+    
+    allDevices.forEach(device => {
+      const deviceId = device.device_id || device.id;
+      if (deviceId && String(deviceId).endsWith('_10')) {
+        excludedIds.add(String(deviceId));
+        const baseId = String(deviceId).split('_')[0];
+        excludedIds.add(baseId);
+      }
     });
+    
+    return excludedIds;
   };
 
-  // ✅ FIXED: Helper to mark data as processed
-  const markDataAsProcessed = (deviceId, timestamp) => {
-    const dataKey = `${deviceId}_${timestamp}`;
-    setProcessedDataSet(prev => {
-      const newSet = new Set(prev);
-      newSet.add(dataKey);
-      setStoredProcessedData(newSet);
-      return newSet;
-    });
-  };
-
-  const parseEmailList = (data6String) => {
-    if (!data6String || typeof data6String !== 'string') return [];
-
-    const emails = data6String
-      .split(',')
-      .map(email => email.trim().toLowerCase())
-      .filter(email => {
-        const cleanEmail = email.replace(/\.com\.com$/, '.com');
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(cleanEmail);
-      })
-      .map(email => email.replace(/\.com\.com$/, '.com'));
-
-    return [...new Set(emails)];
-  };
-
-  const sendWaterAlertEmail = async (emails, deviceId, sensorData) => {
-    if (!emails || emails.length === 0) {
-      console.warn('No valid email addresses found for alert');
-      return false;
-    }
-
+  // Fast delete - removes from UI immediately without full refresh
+  const handleDelete = async (record, deviceId) => {
+    const userConfirmed = window.confirm(
+      `⚠️ VERIFY BEFORE DELETING ⚠️\n\n` +
+      `Device: ${deviceId}\n` +
+      `Timestamp: ${new Date(record.timestamp).toLocaleString()}\n` +
+      `Previous Good Value: ${record.previousValue?.toFixed(3)} m³\n` +
+      `Garbage Value: ${record.currentValue?.toFixed(3)} m³\n` +
+      `Drop: ${record.dropAmount} m³ (${record.dropPercentage}%)\n\n` +
+      `Are you sure you want to delete this garbage data entry?\n` +
+      `This action cannot be undone!`
+    );
+    
+    if (!userConfirmed) return;
+    
+    setDeletingId(record._id);
+    
     try {
-      const toArray = emails.map(email => ({
-        email: email,
-        name: email.split('@')[0]
-      }));
-
-      const payload = {
-        sender: {
-          name: "जल स्तर अलर्ट",
-          email: "pinea.notify@gmail.com"
-        },
-        to: toArray,
-        subject: `🚨 जल स्तर अलर्ट`,
-        textContent: `सावधान:-\nडैम का जल स्तर बढ़ रहा है अतः सुरक्षित जगह सावधान और सुरक्षित रहे।`,
-        htmlContent: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; direction: ltr;">
-            <h2 style="color: #dc2626; text-align: center;">🚨 जल स्तर अलर्ट</h2>
-            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <p style="font-size: 20px; line-height: 1.8; text-align: center;">
-                    <strong>सावधान:-</strong><br>
-                    डैम का जल स्तर बढ़ रहा है<br>
-                    अतः सुरक्षित जगह सावधान और सुरक्षित रहे।
-                </p>
-            </div>
-            <p style="color: #6b7280; text-align: center; font-size: 12px;">
-                पाइनिया जल निगरानी प्रणाली से स्वचालित चेतावनी
-            </p>
-        </div>
-    `
-      };
-
-      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'api-key': import.meta.env.VITE_BREVO_API_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('Water level alert email sent successfully:', result);
-
-      // ✅ FIXED: Record sent alert in state AND localStorage
-      recordAlertSent(deviceId);
-
-      return true;
-    } catch (error) {
-      console.error('Error sending water level alert email:', error);
-      return false;
-    }
-  };
-
-  // ✅ FIXED: Improved shouldSendAlertCheck logic
-  const shouldSendAlertCheck = (deviceId, latestData, isAutoRefresh = false) => {
-    if (!latestData) return false;
-
-    const dataTimestamp = new Date(latestData.createdAt).getTime();
-    const now = Date.now();
-
-    // Check if data is fresh (within 40 seconds)
-    if (now - dataTimestamp > 40000) {
-      console.log(`Alert for ${deviceId} skipped: Data is older than 40 seconds`);
-      return false;
-    }
-
-    // ✅ FIXED: Use state-based lastAlertSent instead of ref
-    const lastAlertTime = lastAlertSent.get(deviceId);
-    if (lastAlertTime && (now - lastAlertTime < 60000)) {
-      console.log(`Alert for ${deviceId} skipped: Sent recently (${Math.round((now - lastAlertTime) / 1000)}s ago)`);
-      return false;
-    }
-
-    // ✅ FIXED: Check processedDataSet from state
-    const dataKey = `${deviceId}_${dataTimestamp}`;
-    if (processedDataSet.has(dataKey)) {
-      console.log(`Alert for ${deviceId} skipped: Data already processed`);
-      return false;
-    }
-
-    // ✅ FIXED: Better initial load handling
-    // Only skip on VERY FIRST load (before any data is fetched)
-    if (initialLoadRef.current && isAutoRefresh === false) {
-      console.log(`Alert for ${deviceId} skipped: Initial page load`);
-      return false;
-    }
-
-    return true;
-  };
-
-  const fetchAlertDevices = async (isAutoRefresh = false) => {
-    try {
-      if (!isAutoRefresh) {
-        setLoading(true);
-      }
-      setError(null);
-
-      console.log('Starting to fetch alert devices...');
-
-      const devicesResponse = await API.get('/sensor-data/devices/all');
-      console.log('Devices API response:', devicesResponse);
-
-      const allDevices = devicesResponse.data.devices || [];
-      console.log('All devices loaded:', allDevices.length, allDevices);
-
-      const alertDevicesList = allDevices.filter(device => {
-        const hasAlert = device.device_id && device.device_id.toLowerCase().includes('-alert');
-        if (hasAlert) {
-          console.log('Found alert device:', device.device_id, device);
-        }
-        return hasAlert;
-      });
-
-      console.log('Alert devices found:', alertDevicesList.length, alertDevicesList);
-
-      if (alertDevicesList.length === 0) {
-        console.log('No alert devices found in the response');
-        setAlertDevices([]);
-        return;
-      }
-
-      const devicesWithData = await Promise.all(
-        alertDevicesList.map(async (device) => {
-          try {
-            console.log(`Fetching data for device: ${device.device_id}`);
-
-            const dataResponse = await API.get(`/sensor-data?device_id=${device.device_id}`);
-            const deviceData = dataResponse.data.data || dataResponse.data || [];
-            console.log(`Data for ${device.device_id}:`, deviceData.length, 'records', deviceData);
-
-            const latestData = deviceData.length > 0
-              ? deviceData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
-              : null;
-
-            const emails = latestData?.data6 ? parseEmailList(latestData.data6) : [];
-
-            console.log(`Device ${device.device_id}: ${emails.length} emails found`);
-
-            // ✅ FIXED: Use improved shouldSendAlertCheck
-            if (emails.length > 0 && latestData && shouldSendAlertCheck(device.device_id, latestData, isAutoRefresh)) {
-              const dataTimestamp = new Date(latestData.createdAt).getTime();
-              markDataAsProcessed(device.device_id, dataTimestamp);
-
-              console.log(`Sending alert for ${device.device_id} to ${emails.length} recipients`);
-              try {
-                const emailSent = await sendWaterAlertEmail(emails, device.device_id, latestData);
-                if (emailSent) {
-                  console.log(`Water level alert sent for device: ${device.device_id}`);
-                } else {
-                  console.log(`Failed to send alert for device: ${device.device_id}`);
-                }
-              } catch (emailError) {
-                console.error(`Error sending email for ${device.device_id}:`, emailError);
-              }
-            } else if (emails.length > 0 && latestData) {
-              console.log(`Alert conditions not met for ${device.device_id}:`, {
-                hasEmails: emails.length > 0,
-                hasData: !!latestData,
-                shouldSend: shouldSendAlertCheck(device.device_id, latestData, isAutoRefresh),
-                dataAge: latestData ? `${Math.round((Date.now() - new Date(latestData.createdAt).getTime()) / 1000)}s` : 'N/A',
-              });
+      await API.delete(`/sensor-data/${record._id}`);
+      
+      // Remove from UI immediately - MUCH FASTER
+      setDevicesWithGarbage(prevDevices => {
+        return prevDevices.map(device => {
+          if (device.device_id === deviceId) {
+            const updatedRecords = device.garbageRecords.filter(r => r._id !== record._id);
+            
+            // If no garbage records left for this device, remove the device entirely
+            if (updatedRecords.length === 0) {
+              return null;
             }
-
+            
             return {
-              id: device._id,
-              device_id: device.device_id,
-              device_name: device.device_name,
-              device_location: device.device_location,
-              device_site_name: device.device_site_name,
-              latitude: device.latitude,
-              longitude: device.longitude,
-              message: latestData ? "Water Level Monitoring Active" : "No Data Available",
-              severity: "High",
-              latestData: latestData,
-              createdAt: latestData ? new Date(latestData.createdAt) : new Date(),
-              emails: emails,
-              emailCount: emails.length,
-              totalReadings: deviceData.length,
-              status: latestData ? "active" : "inactive",
-              lastAlertSent: lastAlertSent.get(device.device_id),
-              dataAge: latestData ? Math.round((Date.now() - new Date(latestData.createdAt).getTime()) / 1000) : null
-            };
-          } catch (error) {
-            console.error(`Error processing device ${device.device_id}:`, error);
-            return {
-              id: device._id,
-              device_id: device.device_id,
-              device_name: device.device_name,
-              device_location: device.device_location,
-              device_site_name: device.device_site_name,
-              latitude: device.latitude,
-              longitude: device.longitude,
-              message: "Error fetching device data: " + error.message,
-              severity: "Medium",
-              latestData: null,
-              createdAt: new Date(),
-              emails: [],
-              emailCount: 0,
-              totalReadings: 0,
-              status: "error",
-              lastAlertSent: null,
-              dataAge: null
+              ...device,
+              totalGarbageRecords: updatedRecords.length,
+              garbageRecords: updatedRecords,
+              lastGarbageDate: updatedRecords[updatedRecords.length - 1]?.createdAt
             };
           }
-        })
-      );
-
-      setAlertDevices(devicesWithData);
-      console.log('Final alert devices with data:', devicesWithData);
-
+          return device;
+        }).filter(device => device !== null);
+      });
+      
+      console.log(`Deleted record ${record._id} successfully`);
+      
     } catch (error) {
-      console.error('Error fetching alert devices:', error);
-      if (!isAutoRefresh) {
-        setError(`Failed to load alert devices: ${error.message}`);
-      }
+      console.error("Error deleting data:", error);
+      alert(`❌ Failed to delete: ${error.message}`);
     } finally {
-      if (!isAutoRefresh) {
-        setLoading(false);
-      }
-      setRefreshing(false);
+      setDeletingId(null);
+    }
+  };
 
-      // ✅ FIXED: Mark initial load ONLY after first successful fetch
-      if (initialLoadRef.current) {
-        initialLoadRef.current = false;
-        console.log('Initial load completed, future refreshes will send alerts for new data');
+  const fetchAllDevicesGarbageData = async () => {
+    try {
+      setRefreshing(true);
+      setScanProgress({ current: 0, total: 0 });
+      
+      const devicesResponse = await API.get('/devices');
+      let allDevices = [];
+      
+      if (devicesResponse.data && Array.isArray(devicesResponse.data)) {
+        allDevices = devicesResponse.data;
+      } else if (devicesResponse.data && Array.isArray(devicesResponse.data.devices)) {
+        allDevices = devicesResponse.data.devices;
       }
+      
+      if (allDevices.length === 0) {
+        setDevicesWithGarbage([]);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+      
+      const excludedIds = getExcludedDeviceIds(allDevices);
+      
+      const filteredDevices = allDevices.filter(device => {
+        const deviceId = device.device_id || device.id;
+        if (!deviceId) return false;
+        
+        const idStr = String(deviceId);
+        const baseId = idStr.split('_')[0];
+        
+        if (excludedIds.has(idStr) || excludedIds.has(baseId)) {
+          return false;
+        }
+        
+        return isFlowMeter(device);
+      });
+      
+      setScanProgress({ current: 0, total: filteredDevices.length });
+      
+      const devicesWithIssues = [];
+      
+      // Process in smaller batches to avoid overwhelming
+      const batchSize = 5;
+      for (let i = 0; i < filteredDevices.length; i += batchSize) {
+        const batch = filteredDevices.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (device, batchIndex) => {
+          const deviceId = device.device_id || device.id;
+          if (!deviceId) return null;
+          
+          try {
+            const sensorResponse = await API.get(`/sensor-data/device/${deviceId}`);
+            let sensorData = [];
+            
+            if (sensorResponse.data && Array.isArray(sensorResponse.data)) {
+              sensorData = sensorResponse.data;
+            } else if (sensorResponse.data && Array.isArray(sensorResponse.data.data)) {
+              sensorData = sensorResponse.data.data;
+            }
+            
+            setScanProgress(prev => ({ ...prev, current: prev.current + 1 }));
+            
+            if (sensorData.length < 2) return null;
+            
+            const garbageRecords = detectCriticalCumulativeFlowDrop(sensorData);
+            
+            if (garbageRecords.length > 0) {
+              return {
+                device_id: deviceId,
+                device_name: device.device_name || device.name || deviceId,
+                device_type: device.device_type || device.type || "flow-meter",
+                device_location: device.device_location || device.location || "Unknown",
+                device_site_name: device.device_site_name,
+                totalGarbageRecords: garbageRecords.length,
+                totalReadings: sensorData.length,
+                garbageRecords: garbageRecords,
+                firstGarbageDate: garbageRecords[0]?.createdAt,
+                lastGarbageDate: garbageRecords[garbageRecords.length - 1]?.createdAt
+              };
+            }
+          } catch (error) {
+            console.error(`Error processing ${deviceId}:`, error);
+          }
+          return null;
+        });
+        
+        const batchResults = await Promise.all(batchPromises);
+        const validBatchResults = batchResults.filter(r => r !== null);
+        devicesWithIssues.push(...validBatchResults);
+      }
+      
+      devicesWithIssues.sort((a, b) => b.totalGarbageRecords - a.totalGarbageRecords);
+      setDevicesWithGarbage(devicesWithIssues);
+      
+    } catch (error) {
+      console.error("Error fetching garbage data:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      setScanProgress({ current: 0, total: 0 });
     }
   };
 
   useEffect(() => {
-    // Initial load
-    fetchAlertDevices(false);
-
-    // Auto-refresh every 10 seconds
+    fetchAllDevicesGarbageData();
+    
     const interval = setInterval(() => {
-      console.log('Auto-refreshing alert devices...');
-      fetchAlertDevices(true);
-    }, 10000);
-
+      fetchAllDevicesGarbageData();
+    }, 120000); // Increased to 2 minutes for better performance
+    
     return () => clearInterval(interval);
   }, []);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchAlertDevices(false);
+  const getSeverityBadge = () => {
+    return <span className="severity-badge critical">CRITICAL</span>;
   };
 
-  const handleSendTestAlert = async (device) => {
-    if (!device.latestData || device.emails.length === 0) {
-      alert('Water level alert');
-      return;
-    }
-
-    try {
-      const emailSent = await sendWaterAlertEmail(device.emails, device.device_id, device.latestData);
-      if (emailSent) {
-        alert('Water level alert');
-      } else {
-        alert('Water level alert');
-      }
-    } catch (error) {
-      console.error('Error sending test alert:', error);
-      alert('Water level alert');
-    }
-  };
-
-  const filteredDevices = alertDevices.filter(device =>
+  const filteredDevices = devicesWithGarbage.filter(device =>
     device.device_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    device.device_location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    device.device_site_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    (device.device_name && device.device_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (device.device_location && device.device_location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (device.device_site_name && device.device_site_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const totalGarbageRecords = devicesWithGarbage.reduce((sum, device) => sum + device.totalGarbageRecords, 0);
 
   if (loading) {
     return (
@@ -399,7 +826,18 @@ const AlertsPage = () => {
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           />
-          <p>Loading alert devices...</p>
+          <p>Scanning flow-meters for critical cumulative flow drops...</p>
+          {scanProgress.total > 0 && (
+            <div className="progress-bar-container">
+              <div 
+                className="progress-bar" 
+                style={{ width: `${(scanProgress.current / scanProgress.total) * 100}%` }}
+              />
+              <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                Checking flow-meter {scanProgress.current} of {scanProgress.total}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -416,170 +854,169 @@ const AlertsPage = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="header-title">
-            <FaBell className="header-icon" />
-            <h1>Water Level Alerts</h1>
-            <span className="device-count">{alertDevices.length} alert devices</span>
+            <FaTachometerAlt className="header-icon" />
+            <h1>Flow-Meter - Critical Drop Detection</h1>
+            <span className="device-count">{totalGarbageRecords} critical drops</span>
           </div>
           <p className="header-subtitle">
-            Automatic water level alerts - Checking for new data every 10 seconds
+            Found in {devicesWithGarbage.length} flow-meters | Last scan: {new Date().toLocaleTimeString()}
+          </p>
+          <p className="header-note">
+            🔍 Only showing devices with type: <strong>flow-meter</strong>
+            <br />
+            🚫 Excluding devices with _10 suffix and their matching base IDs
+            <br />
+            ⚠️ Detecting cumulative flow drops &gt;80% | Values &gt;10 are ignored
+            <br />
+            📌 Exact 0 values (device offline) are ignored
+            <br />
+            🗑️ Click delete icon to remove garbage data (instant removal)
           </p>
         </motion.div>
       </div>
 
       {/* Controls */}
       <div className="alerts-controls">
-        <motion.div
-          className="search-container"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
+        <div className="search-container">
           <FaSearch className="search-icon" />
           <input
             type="text"
-            placeholder="Search alert devices by ID, location, or site..."
+            placeholder="Search by device ID, name, or location..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
-        </motion.div>
-
+        </div>
         <motion.button
-          onClick={handleRefresh}
+          onClick={fetchAllDevicesGarbageData}
           disabled={refreshing}
           className="refresh-btn"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
           <FaSync className={refreshing ? 'spinning' : ''} />
-          {refreshing ? 'Refreshing...' : 'Refresh Now'}
+          {refreshing ? 'Scanning...' : 'Scan Now'}
         </motion.button>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <motion.div
-          className="error-message"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          {error}
-          <div style={{ marginTop: '10px', fontSize: '0.9rem', opacity: 0.8 }}>
-            Check browser console for detailed error information
-          </div>
-        </motion.div>
-      )}
-
-      {/* Alerts Grid */}
-      <div className="alerts-grid">
+      {/* Devices List */}
+      <div className="devices-list">
         {filteredDevices.length === 0 ? (
           <div className="no-devices">
-            {searchTerm ? 'No alert devices match your search' : 'No alert devices found'}
-            {alertDevices.length === 0 && !error && (
-              <div style={{ marginTop: '10px', fontSize: '0.9rem', opacity: 0.7 }}>
-                No devices with "-alert" in their ID were found in the system.
+            {searchTerm ? 'No flow-meters match your search' : 'No critical drops detected in flow-meters'}
+            {devicesWithGarbage.length === 0 && !searchTerm && (
+              <div style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.7 }}>
+                ✅ All flow-meters have normal cumulative flow
               </div>
             )}
           </div>
         ) : (
           filteredDevices.map((device, index) => (
             <motion.div
-              key={device.id}
-              className="alert-card"
+              key={device.device_id}
+              className="device-card"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.5) }}
             >
-              <div className="card-header">
-                <div className="device-title">
-                  <FaWater className="water-icon" />
+              <div 
+                className="device-header"
+                onClick={() => setExpandedDevice(expandedDevice === device.device_id ? null : device.device_id)}
+              >
+                <div className="device-info">
+                  <FaExclamationTriangle className="device-warning-icon" />
                   <div>
                     <h3>{device.device_id}</h3>
-                    <span className="device-type">{device.device_name}</span>
+                    <div className="device-meta">
+                      <span className="device-type-badge flow-meter">flow-meter</span>
+                      {device.device_location && <span>📍 {device.device_location}</span>}
+                      {device.device_site_name && <span> • 🏭 {device.device_site_name}</span>}
+                    </div>
                   </div>
                 </div>
-                <div className={`status-badge ${device.status}`}>
-                  {device.status === 'active' ? 'Active' : device.status === 'inactive' ? 'No Data' : 'Error'}
+                <div className="device-stats">
+                  <span className="garbage-badge critical-badge">{device.totalGarbageRecords} critical drops</span>
+                  <span className={`expand-icon ${expandedDevice === device.device_id ? 'expanded' : ''}`}>▼</span>
                 </div>
               </div>
 
-              <div className="card-content">
-                {/* Location Information */}
-                {(device.device_location || device.device_site_name) && (
-                  <div className="location-info">
-                    <FaMapMarkerAlt className="location-icon" />
-                    <div>
-                      {device.device_location && <span>{device.device_location}</span>}
-                      {device.device_site_name && <span> • {device.device_site_name}</span>}
-                    </div>
-                  </div>
-                )}
-
-                <div className="alert-message">
-                  <FaExclamationTriangle className="alert-icon" />
-                  <span>{device.message}</span>
-                </div>
-
-                <div className="device-info">
-                  <div className="info-item">
-                    <span className="label">Last Update:</span>
-                    <span className="value">{device.createdAt.toLocaleString()}</span>
-                  </div>
-
-                  <div className="info-item">
-                    <span className="label">Data Age:</span>
-                    <span className="value">{device.dataAge !== null ? `${device.dataAge}s ago` : 'N/A'}</span>
-                  </div>
-
-                  <div className="info-item">
-                    <span className="label">Total Readings:</span>
-                    <span className="value">{device.totalReadings}</span>
-                  </div>
-
-                  {device.latestData && (
-                    <>
-                      <div className="info-item">
-                        <span className="label">Flow Rate:</span>
-                        <span className="value">{device.latestData.data2} m³/hr</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="label">Cumulative Flow:</span>
-                        <span className="value">{device.latestData.data3} m³</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="email-section">
-                  <div className="email-header">
-                    <FaEnvelope className="email-icon" />
-                    <span>Alert Recipients: {device.emailCount}</span>
-                  </div>
-                  {device.emails.length > 0 && (
-                    <div className="email-list">
-                      {device.emails.map((email, index) => (
-                        <span key={index} className="email-badge">
-                          {email}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="card-actions">
-                <button
-                  className="test-alert-btn"
-                  onClick={() => handleSendTestAlert(device)}
-                  disabled={!device.latestData || device.emailCount === 0}
+              {expandedDevice === device.device_id && (
+                <motion.div 
+                  className="device-details"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <FaBell /> Send Test Alert
-                </button>
-              </div>
+                  <div className="summary-info">
+                    <div className="summary-item">
+                      <span className="label">Device Type:</span>
+                      <span className="value"><strong>flow-meter</strong></span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="label">Total Readings:</span>
+                      <span className="value">{device.totalReadings}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="label">Critical Drops:</span>
+                      <span className="value" style={{ color: '#dc2626', fontWeight: 'bold' }}>{device.totalGarbageRecords}</span>
+                    </div>
+                  </div>
+
+                  <div className="garbage-records">
+                    <h4>Critical Cumulative Flow Drops (&gt;80% drop & value ≤ 10):</h4>
+                    <div className="table-wrapper">
+                      <table className="garbage-table">
+                        <thead>
+                          <tr>
+                            <th>Timestamp</th>
+                            <th>Flow Rate (m³/hr)</th>
+                            <th>Previous Good Value (m³)</th>
+                            <th>Garbage Value (m³)</th>
+                            <th>Drop Amount</th>
+                            <th>Drop %</th>
+                            <th>Severity</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {device.garbageRecords.map((record, idx) => (
+                            <tr key={record._id || idx} className="garbage-row critical-row">
+                              <td>{new Date(record.timestamp).toLocaleString()}</td>
+                              <td>{record.data2?.toFixed(2)} m³/hr</td>
+                              <td className="expected-value">{record.previousValue?.toFixed(3)} m³</td>
+                              <td className="garbage-value">{record.currentValue?.toFixed(3)} m³</td>
+                              <td className="garbage-value">- {record.dropAmount} m³</td>
+                              <td className="garbage-value">{record.dropPercentage}%</td>
+                              <td>{getSeverityBadge()}</td>
+                              <td className="action-cell">
+                                <button
+                                  onClick={() => handleDelete(record, device.device_id)}
+                                  disabled={deletingId === record._id}
+                                  className="delete-garbage-btn"
+                                  title="Delete this garbage data entry"
+                                >
+                                  {deletingId === record._id ? (
+                                    <span className="deleting-spinner">⏳</span>
+                                  ) : (
+                                    <FaTrash />
+                                  )}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="context-info">
+                    <div className="critical-warning">
+                      <FaExclamationTriangle style={{ marginRight: '0.5rem' }} />
+                      <strong>CRITICAL ISSUE:</strong> Cumulative flow dropped by &gt;80% (value ≤ 10)
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           ))
         )}
